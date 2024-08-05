@@ -47,7 +47,7 @@ void button_task(void *arg)
             if ((esp_timer_get_time() - button_press_time) >= 3000000) // 5 seconds in microseconds
             {
                 ESP_LOGI(TAG, "------ Unlock power off");
-                ESP_ERROR_CHECK(seesaw_turnOff(seesaw_handle));
+                ESP_ERROR_CHECK(seesaw_turn_off(seesaw_handle));
                 while(1);
             }
         } else
@@ -55,22 +55,26 @@ void button_task(void *arg)
             button_press_time = 0;          // Reset press time if button is released
         }
 
-        vTaskDelay(pdMS_TO_TICKS(10)); // Debouncing delay
+        vTaskDelay(pdMS_TO_TICKS(100)); // Debouncing delay
     }
 }
 
 void encoder_task(void *arg)
 {    
-    int32_t encoder_position;
+    int32_t encoder_position = 0;
 
     ESP_LOGI(TAG, "------ Setup Encoder");
-    encoder_position = seesaw_getEncoderPosition(seesaw_handle);
+    seesaw_encoder_set_position(seesaw_handle, encoder_position);
+    encoder_position = seesaw_encoder_get_position(seesaw_handle);
+
     vTaskDelay(pdMS_TO_TICKS(100));
-    ESP_ERROR_CHECK(seesaw_enableEncoderInterrupt(seesaw_handle));
+
+    ESP_ERROR_CHECK(seesaw_encoder_enable_interrupt(seesaw_handle));
 
     for (;;)
-    {
-        int32_t new_encoder_position = seesaw_getEncoderPosition(seesaw_handle);
+    {   
+        
+        int32_t new_encoder_position = seesaw_encoder_get_position(seesaw_handle);
 
         if(encoder_position != new_encoder_position)
         {
@@ -91,10 +95,10 @@ void app_main()
         .scl_speed_hz = (400 * 1000),
         .device_address = SEESAW_ADDRESS};
     ESP_ERROR_CHECK(seesaw_init(board_i2c_bus_handle, &i2c_dev_conf, &seesaw_handle));
-    ESP_ERROR_CHECK(seesaw_SWreset(seesaw_handle));
+    ESP_ERROR_CHECK(seesaw_SW_reset(seesaw_handle));
 
     ESP_LOGI(TAG, "------ Lock Power On");
-    ESP_ERROR_CHECK(seesaw_turnOn(seesaw_handle));
+    ESP_ERROR_CHECK(seesaw_turn_on(seesaw_handle));
     ESP_LOGI(TAG, "------ Lock Power Done");
 
     // Create the button task
@@ -109,28 +113,26 @@ void app_main()
         .type = (NEO_GRB + NEO_KHZ800),
     };
 
-    // ESP_ERROR_CHECK(seesaw_neopixel_init(seesaw_handle, &neopixel_config));
+    ESP_ERROR_CHECK(seesaw_neopixel_init(seesaw_handle, &neopixel_config));
 
-    // ESP_LOGI(TAG, "------ Neopixel Off");
-    // ESP_ERROR_CHECK(seesaw_show(seesaw_handle));
+    ESP_LOGI(TAG, "------ Neopixel Off");
+    ESP_ERROR_CHECK(seesaw_neopixel_show(seesaw_handle));
 
     
-    // ESP_LOGI(TAG, "------ Neopixel On");
+    ESP_LOGI(TAG, "------ Neopixel On");
 
-    // for(uint16_t i=0; i<seesaw_num_pixels(seesaw_handle); i++) 
-    // {
-    //     seesaw_set_pixel_color(seesaw_handle, i, seesaw_color(255, 0, 0));
-    //     seesaw_show(seesaw_handle);
-    //     vTaskDelay(pdMS_TO_TICKS(100));
-    // }
+    for(uint16_t i=0; i<seesaw_neopixel_num_pixels(seesaw_handle); i++) 
+    {
+        seesaw_neopixel_set_pixel_color(seesaw_handle, i, seesaw_neopixel_color(255, 0, 0));
+        seesaw_neopixel_show(seesaw_handle);
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
 
-    // for(uint16_t i=seesaw_num_pixels(seesaw_handle); i>0; i--) 
-    // {
-    //     seesaw_set_pixel_color(seesaw_handle, i, seesaw_color(255, 0, 0));
-    //     seesaw_show(seesaw_handle);
-    //     vTaskDelay(pdMS_TO_TICKS(100));
-    // }
-
+    while (1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    
 
     //     // ESP_LOGI(TAG, "------ Initialize Touch.");
     //     // if (touch_init() != ESP_OK)
