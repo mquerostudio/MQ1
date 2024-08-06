@@ -28,6 +28,8 @@ static const char *TAG = "main";
 
 seesaw_handle_t seesaw_handle;
 
+int32_t encoder_position = 0;
+
 void button_task(void *arg)
 {
     // Configure button input pin
@@ -35,7 +37,7 @@ void button_task(void *arg)
 
     int64_t button_press_time = 0;
 
-    for(;;)
+    for (;;)
     {
         if (gpio_get_level(PIN_ENCODER_SW) == 0) // Button pressed
         {
@@ -48,11 +50,13 @@ void button_task(void *arg)
             {
                 ESP_LOGI(TAG, "------ Unlock power off");
                 ESP_ERROR_CHECK(seesaw_turn_off(seesaw_handle));
-                while(1);
+                while (1)
+                    ;
             }
-        } else
+        }
+        else
         {
-            button_press_time = 0;          // Reset press time if button is released
+            button_press_time = 0; // Reset press time if button is released
         }
 
         vTaskDelay(pdMS_TO_TICKS(100)); // Debouncing delay
@@ -60,11 +64,8 @@ void button_task(void *arg)
 }
 
 void encoder_task(void *arg)
-{    
-    int32_t encoder_position = 0;
-
+{
     ESP_LOGI(TAG, "------ Setup Encoder");
-    seesaw_encoder_set_position(seesaw_handle, encoder_position);
     encoder_position = seesaw_encoder_get_position(seesaw_handle);
 
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -72,17 +73,16 @@ void encoder_task(void *arg)
     ESP_ERROR_CHECK(seesaw_encoder_enable_interrupt(seesaw_handle));
 
     for (;;)
-    {   
-        
+    {
         int32_t new_encoder_position = seesaw_encoder_get_position(seesaw_handle);
 
-        if(encoder_position != new_encoder_position)
+        if (encoder_position != new_encoder_position)
         {
             ESP_LOGI(TAG, "Encoder position: %" PRId32, encoder_position);
             encoder_position = new_encoder_position;
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }   
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
 }
 
 void app_main()
@@ -101,12 +101,7 @@ void app_main()
     ESP_ERROR_CHECK(seesaw_turn_on(seesaw_handle));
     ESP_LOGI(TAG, "------ Lock Power Done");
 
-    // Create the button task
-    xTaskCreate(button_task, "button_task", 2048, NULL, 10, NULL);
-    xTaskCreate(encoder_task, "encoder_task", 4096, NULL, 10, NULL);
-
     ESP_LOGI(TAG, "------ Setup Neopixel");
-
     neopixel_config_t neopixel_config = {
         .numLEDs = 24,
         .pin = SAM21_PIN_NEOPIXEL,
@@ -114,37 +109,38 @@ void app_main()
     };
 
     ESP_ERROR_CHECK(seesaw_neopixel_init(seesaw_handle, &neopixel_config));
-
-    ESP_LOGI(TAG, "------ Neopixel Off");
+    seesaw_neopixel_set_brightness(seesaw_handle, 100);
     ESP_ERROR_CHECK(seesaw_neopixel_show(seesaw_handle));
 
-    
-    ESP_LOGI(TAG, "------ Neopixel On");
+    ESP_LOGI(TAG, "------ Neopixel On Animation");
 
-    for(uint16_t i=0; i<seesaw_neopixel_num_pixels(seesaw_handle); i++) 
+    for (uint8_t i = 0; i < 24; i++)
     {
-        seesaw_neopixel_set_pixel_color(seesaw_handle, i, seesaw_neopixel_color(255, 0, 0));
+        seesaw_neopixel_set_pixel_color(seesaw_handle, i, 0); // Turn off all pixels
+    }
+
+    for (uint16_t i = 0; i < 24; i++)
+    {
+        seesaw_neopixel_set_pixel_color(seesaw_handle, i, seesaw_neopixel_color(0, 0, 255));
         seesaw_neopixel_show(seesaw_handle);
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
 
-    while (1)
+    // vTaskDelay(pdMS_TO_TICKS(100));
+
+    for (uint8_t i = 0; i < 24; i++)
+    {
+        seesaw_neopixel_set_pixel_color(seesaw_handle, i, 0); // Turn off all pixels
+        seesaw_neopixel_show(seesaw_handle);
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+
+    // Create the button task
+    xTaskCreate(button_task, "button_task", 2048, NULL, 10, NULL);
+    xTaskCreate(encoder_task, "encoder_task", 4096, NULL, 10, NULL);
+
+    for (;;)
     {
         vTaskDelay(pdMS_TO_TICKS(100));
     }
-    
-
-    //     // ESP_LOGI(TAG, "------ Initialize Touch.");
-    //     // if (touch_init() != ESP_OK)
-    //     // {
-    //     //     ESP_LOGE(TAG, "Touch driver init failed.");
-    //     //     return;
-    //     // }
-
-    // ESP_LOGI(TAG, "------ Initialize DISPLAY.");
-    // display_init();
-    // esp_lcd_panel_draw_bitmap(panel_handle, 0, 0, CONFIG_LCD_H_RES - 1, CONFIG_LCD_V_RES - 1, color_map);
-
-    //     ESP_LOGI(TAG, "Initialize LVGL library");
-    //     lv_init();
 }
