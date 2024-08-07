@@ -3,19 +3,16 @@
 #define PIN_CONFIG_H
 
 // TFT Board Pins
-#define BOARD_TFT_MOSI       (39)
-#define BOARD_TFT_SCK        (38)
-#define BOARD_TFT_CS         (40)
-#define BOARD_TFT_RST        (41)
-#define BOARD_TFT_DC         (42)
-#define BOARD_TFT_BL         (-1)
+#define BOARD_LCD_MOSI       (39)
+#define BOARD_LCD_SCK        (38)
+#define BOARD_LCD_CS         (40)
+#define BOARD_LCD_RST        (41)
+#define BOARD_LCD_DC         (42)
+#define BOARD_LCD_BL         (-1)
 #define BOARD_DISP_TE        (-1)
 
 #define BOARD_TOUCH_IRQ      (48)
 #define BOARD_TOUCH_RST      (-1)
-    
-#define TFT_WIDTH            (240)
-#define TFT_HEIGHT           (320)
 
 #define DISPLAY_BUFFER_SIZE  (TFT_WIDTH * TFT_HEIGHT)
 #define DISPLAY_FULLRESH     true
