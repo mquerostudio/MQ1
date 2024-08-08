@@ -14,8 +14,7 @@
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
 
-#include "lvgl.h"
-#include "esp_lcd_touch_cst816s.h"
+// #include "lvgl.h"
 
 #include "driver/gpio.h"
 #include "i2c_driver.h"
@@ -141,6 +140,9 @@ void app_main()
     xTaskCreate(button_task, "button_task", 2048, NULL, 10, NULL);
     xTaskCreate(encoder_task, "encoder_task", 4096, NULL, 10, NULL);
 
+    ESP_LOGI(TAG, "------ Setup Display");
+    display_init();
+
     uint16_t touch_x[1];
     uint16_t touch_y[1];
     uint16_t touch_strength[1];
@@ -148,17 +150,12 @@ void app_main()
 
     for (;;)
     {
-        // if (xSemaphoreTake(touch_mux, 0) == pdTRUE)
-        // {
-        //     esp_lcd_touch_read_data(tp_handle); // read only when ISR was triggled
-        // }
+        bool touchpad_pressed = esp_lcd_touch_get_coordinates(tp_handle, touch_x, touch_y, touch_strength, &touch_cnt, 1);
 
-        // bool touchpad_pressed = esp_lcd_touch_get_coordinates(tp_handle, touch_x, touch_y, touch_strength, &touch_cnt, 1);
-
-        // if (touchpad_pressed && touch_cnt > 0)
-        // {
-        //     ESP_LOGI(TAG, "Touchpad pressed at x: %d, y: %d", touch_x[0], touch_y[0]);
-        // }
+        if (touchpad_pressed)
+        {
+            ESP_LOGI(TAG, "Touchpad pressed at x: %d, y: %d", touch_x[0], touch_y[0]);
+        }
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }

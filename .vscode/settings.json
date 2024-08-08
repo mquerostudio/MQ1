@@ -45,7 +45,8 @@
         "ets_sys.h": "c",
         "stdbool.h": "c",
         "stdlib.h": "c",
-        "esp_lcd_io_i2c.h": "c"
+        "esp_lcd_io_i2c.h": "c",
+        "esp_lcd_touch.h": "c"
     },
     "editor.fontFamily": "JetBrainsMono-Regular, Consolas, 'Courier New', monospace"
 }

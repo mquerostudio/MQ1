@@ -7,7 +7,5 @@
 
 extern esp_lcd_panel_handle_t panel_handle;
 extern esp_lcd_touch_handle_t tp_handle;
-extern SemaphoreHandle_t touch_mux;
-
 
 void display_init(void);

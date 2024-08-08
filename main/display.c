@@ -6,9 +6,10 @@
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
 
-// #include "esp_lcd_touch_cst816s.h"
+#include "esp_lcd_touch_cst816s.h"
 
 #include "display.h"
+#include "i2c_driver.h"
 #include "board_pins.h"
 #include "app_config.h"
 
@@ -16,17 +17,6 @@ static const char *TAG = "Display Driver";
 
 esp_lcd_panel_handle_t panel_handle;
 esp_lcd_touch_handle_t tp_handle;
-SemaphoreHandle_t touch_mux;
-
-static void touch_callback(esp_lcd_touch_handle_t tp_handle)
-{
-    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    xSemaphoreGiveFromISR(touch_mux, &xHigherPriorityTaskWoken);
-
-    if (xHigherPriorityTaskWoken) {
-        portYIELD_FROM_ISR();
-    }
-}
 
 void display_init(void){
 
@@ -68,27 +58,26 @@ void display_init(void){
     ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
     ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
 
-    touch_mux = xSemaphoreCreateBinary();
+    esp_lcd_panel_io_handle_t tp_io_handle = NULL;
+    esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_CST816S_CONFIG();
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(board_i2c_bus_handle, &tp_io_config, &tp_io_handle));
 
-    // esp_lcd_panel_io_handle_t tp_io_handle = NULL;
-    // esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_CST816S_CONFIG();
-    // ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c((esp_lcd_spi_bus_handle_t)CONFIG_BOARD_I2C_PORT, &tp_io_config, &tp_io_handle));
+    esp_lcd_touch_config_t tp_cfg = {
+        .x_max = CONFIG_LCD_H_RES,
+        .y_max = CONFIG_LCD_V_RES,
+        .rst_gpio_num = BOARD_TOUCH_RST,
+        .int_gpio_num = BOARD_TOUCH_IRQ,
+        .levels = {
+            .reset = 0,
+            .interrupt = 0,
+        },
+        .flags = {
+            .swap_xy = 0,
+            .mirror_x = 0,
+            .mirror_y = 0,
+        },
+        // .interrupt_callback = touch_callback,
+    };
 
-    // esp_lcd_touch_config_t tp_cfg = {
-    //     .x_max = CONFIG_LCD_H_RES,
-    //     .y_max = CONFIG_LCD_V_RES,
-    //     .rst_gpio_num = BOARD_TOUCH_RST,
-    //     .int_gpio_num = BOARD_TOUCH_IRQ,
-    //     .levels = {
-    //         .reset = 0,
-    //         .interrupt = 0,
-    //     },
-    //     .flags = {
-    //         .swap_xy = 0,
-    //         .mirror_x = 0,
-    //         .mirror_y = 0,
-    //     },
-    //     .interrupt_callback = touch_callback,
-    // };
-    // esp_lcd_touch_new_i2c_cst816s(tp_io_handle, &tp_cfg, &tp_handle);
+    esp_lcd_touch_new_i2c_cst816s(tp_io_handle, &tp_cfg, &tp_handle);
 }
